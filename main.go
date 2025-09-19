@@ -24,7 +24,7 @@ func main() {
 	r.POST("/post", Controller.Postingfrom)
 	r.POST("/postt", Controller.Postingto)
 	r.POST("/transfer", Controller.TransferHandler)
-	r.GET("/Get/:id", Controller.Get)
+	r.GET("/get/:id", Controller.Get)
 
 	port := os.Getenv("PORT")
 	if port == "" {

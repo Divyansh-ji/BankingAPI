@@ -95,11 +95,11 @@ func transfer(fromID int, toID int, amount float64) error {
 		fromacc.Balance = fromacc.Balance - amount
 		toacc.Balance = toacc.Balance + amount
 
-		if err := tx.Save(&toacc).Error; err != nil {
+		if err := tx.Save(&fromacc).Error; err != nil {
 			return err
 
 		}
-		if err := tx.Save(&fromacc).Error; err != nil {
+		if err := tx.Save(&toacc).Error; err != nil {
 			return err
 
 		}
@@ -108,6 +108,7 @@ func transfer(fromID int, toID int, amount float64) error {
 	})
 }
 func Get(c *gin.Context) {
+	// parse id param
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -124,5 +125,6 @@ func Get(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{"account": acc})
 }
