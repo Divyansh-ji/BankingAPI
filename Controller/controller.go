@@ -5,6 +5,7 @@ import (
 	"main/intializers"
 	"main/models"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -41,6 +42,32 @@ func Postingto(c *gin.Context) {
 	intializers.DB.Create(&postone)
 	c.JSON(http.StatusCreated, gin.H{"postone": postone})
 
+}
+
+type TransferRequest struct {
+	FromID int     `json:"from_id" binding:"required"`
+	ToID   int     `json:"to_id" binding:"required"`
+	Amount float64 `json:"amount" binding:"required,gt=0"`
+}
+
+func TransferHandler(c *gin.Context) {
+	var req TransferRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := transfer(req.FromID, req.ToID, req.Amount); err != nil {
+		// You can check for specific errors if you want to return different status codes
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }
 
 func transfer(fromID int, toID int, amount float64) error {
@@ -81,15 +108,21 @@ func transfer(fromID int, toID int, amount float64) error {
 	})
 }
 func Get(c *gin.Context) {
-	id := c.Param("id")
-
-	var fromacc []models.Account
-
-	if err := intializers.DB.Find(&fromacc, id).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
-
 	}
-	c.JSON(http.StatusOK, gin.H{"accounts": fromacc})
 
+	var acc models.Account
+	if err := intializers.DB.First(&acc, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"account": acc})
 }

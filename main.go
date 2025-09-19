@@ -18,13 +18,13 @@ func init() {
 }
 func main() {
 	log.Println("app started")
-
+	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 
 	r.POST("/post", Controller.Postingfrom)
 	r.POST("/postt", Controller.Postingto)
-
-	r.GET("/get/:id", Controller.Get)
+	r.POST("/transfer", Controller.TransferHandler)
+	r.GET("/Get/:id", Controller.Get)
 
 	port := os.Getenv("PORT")
 	if port == "" {
