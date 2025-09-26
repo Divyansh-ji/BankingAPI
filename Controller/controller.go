@@ -22,7 +22,7 @@ func Postingfrom(c *gin.Context) {
 		return
 
 	}
-	postone := models.Account{ID: fromaccc.ID, Owner: fromaccc.Owner, Balance: fromaccc.Balance}
+	postone := models.Account{UserID: fromaccc.UserID, Owner: fromaccc.Owner, Balance: fromaccc.Balance}
 	intializers.DB.Create(&postone)
 	c.JSON(http.StatusCreated, gin.H{"postone": postone})
 
@@ -38,7 +38,7 @@ func Postingto(c *gin.Context) {
 		return
 
 	}
-	postone := models.Account{ID: toacc.ID, Owner: toacc.Owner, Balance: toacc.Balance}
+	postone := models.Account{UserID: toacc.UserID, Owner: toacc.Owner, Balance: toacc.Balance}
 	intializers.DB.Create(&postone)
 	c.JSON(http.StatusCreated, gin.H{"postone": postone})
 
@@ -71,42 +71,39 @@ func TransferHandler(c *gin.Context) {
 }
 
 func transfer(fromID int, toID int, amount float64) error {
-
 	return intializers.DB.Transaction(func(tx *gorm.DB) error {
 		var fromacc models.Account
 		var toacc models.Account
-		err := tx.First(&fromacc, fromID).Error
-		if err != nil {
-			return err
-		}
 
+		// Lock the from account
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			First(&fromacc, fromID).Error; err != nil {
 			return err
 		}
+
 		if fromacc.Balance < amount {
 			return errors.New("insufficient funds")
-
 		}
+
+		// Lock the to account — use toID (was the bug)
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
-			First(&toacc, fromID).Error; err != nil {
+			First(&toacc, toID).Error; err != nil {
 			return err
 		}
-		fromacc.Balance = fromacc.Balance - amount
-		toacc.Balance = toacc.Balance + amount
+
+		fromacc.Balance -= amount
+		toacc.Balance += amount
 
 		if err := tx.Save(&fromacc).Error; err != nil {
 			return err
-
 		}
 		if err := tx.Save(&toacc).Error; err != nil {
 			return err
-
 		}
 		return nil
-
 	})
 }
+
 func Get(c *gin.Context) {
 	// parse id param
 	idStr := c.Param("id")

@@ -4,6 +4,7 @@ import (
 	"log"
 	"main/Controller"
 	"main/intializers"
+	"main/middleware"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -21,10 +22,18 @@ func main() {
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 
-	r.POST("/post", Controller.Postingfrom)
-	r.POST("/postt", Controller.Postingto)
-	r.POST("/transfer", Controller.TransferHandler)
-	r.GET("/get/:id", Controller.Get)
+	authGroup := r.Group("/api")
+	authGroup.Use(middleware.RequireAuth)
+	{
+		r.POST("/post", Controller.Postingfrom)
+		r.POST("/postt", Controller.Postingto)
+		r.POST("/transfer", Controller.TransferHandler)
+		r.GET("/get/:id", Controller.Get)
+	}
+	r.POST("signup", Controller.SignUp)
+	r.POST("login", Controller.Login)
+	r.POST("/refreshToken", Controller.RefreshToken)
+	r.GET("/logout", Controller.Logout)
 
 	port := os.Getenv("PORT")
 	if port == "" {
