@@ -1,0 +1,13 @@
+# Go
+*.exe
+*.out
+
+# Dependencies
+vendor/
+node_modules/
+
+# Env files
+.env
+
+# Docker
+*.log
